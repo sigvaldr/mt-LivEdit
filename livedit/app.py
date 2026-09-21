@@ -25,8 +25,8 @@ class LivEditApp(tk.Tk):
         self.minsize(600, 600)
         theme.apply_theme(self)
         self.icon_cache = IconCache(size=ICON_SIZE)
-        icon = tk.PhotoImage(file="assets/icon.png")
-        self.iconphoto(True, icon)
+        # icon = tk.PhotoImage(file="assets/icon.png")
+        # self.iconphoto(True, icon)
 
         # ---- app state ----
         self.document: LiveryDocument | None = None
