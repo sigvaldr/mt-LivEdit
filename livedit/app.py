@@ -10,7 +10,9 @@ from . import theme
 from .icons import IconCache
 from .widgets import SelectableIconList
 
-APP_TITLE = "LivEdit"
+VERSION = "1.0"
+
+APP_TITLE = "LivEdit v"+VERSION
 PAD = 10
 ICON_SIZE = 48
 
@@ -23,6 +25,8 @@ class LivEditApp(tk.Tk):
         self.minsize(600, 600)
         theme.apply_theme(self)
         self.icon_cache = IconCache(size=ICON_SIZE)
+        icon = tk.PhotoImage(file="assets/icon.png")
+        self.iconphoto(True, icon)
 
         # ---- app state ----
         self.document: LiveryDocument | None = None

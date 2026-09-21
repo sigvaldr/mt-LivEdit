@@ -7,7 +7,7 @@ from typing import Any
 
 
 class DecalParseError(Exception):
-    print("Fuck.")
+    print("")
 
 
 @dataclass
