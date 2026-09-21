@@ -182,8 +182,9 @@ class DecalListScreen(ttk.Frame):
 
         icon_rows = []
         for storage_index, label in self.rows:
-            decal_key = app.document.layers[storage_index].get("decalKey", "")
-            icon = app.icon_cache.get(decal_key)
+            layer = app.document.layers[storage_index]
+            decal_key = layer.get("decalKey", "")
+            icon = app.icon_cache.get(decal_key, layer.get("color"))
             icon_rows.append((storage_index, label, icon))
 
         self.icon_list = SelectableIconList(self, icon_rows)
