@@ -91,12 +91,17 @@ your game version behaves differently:
 ```
 livedit/
   main.py                  entry point (python main.py)
+  assets/
+    decals/                decal preview images, named to match decalKey
   livedit/
     app.py                 all GUI screens + navigation
     decal_model.py         JSON parsing + in-game display ordering
     operations.py          move / rotate / scale math
     clipboard_util.py      cross-platform clipboard (pyperclip + Tk fallback)
     theme.py               lightning-blue (#00B5FF) on black theme
+    icons.py               loads/caches decal preview thumbnails
+    widgets.py             scrollable icon+text multi-select list
+    resources.py           locates bundled files, in dev or as a frozen exe
   tests/
     test_core.py           unit tests for parsing + operations (no GUI needed)
   requirements.txt
@@ -107,3 +112,51 @@ Run the tests any time with:
 ```bash
 python tests/test_core.py
 ```
+
+## Decal preview icons
+
+Drop image files into `assets/decals/`, named to match each decal's
+`decalKey` exactly (case-insensitive) — e.g. a decal with
+`"decalKey": "sport_stripe_01"` needs a file named
+`sport_stripe_01.png` (or `.jpg`, `.gif`, etc. — see below). The decal
+list screen will automatically show that image next to the decal's
+name. Decals with no matching file just show their name with no icon,
+so it's fine to only have images for some of them.
+
+- **Without Pillow**: only `.png`, `.gif`, `.ppm`, `.pgm` are readable,
+  and thumbnails can only be *shrunk* (not cleanly enlarged).
+- **With Pillow installed** (`pip install Pillow`, already in
+  `requirements.txt`): any common format works (`.jpg`, `.bmp`,
+  `.webp`, etc.) and thumbnails are resized cleanly regardless of the
+  original image's dimensions. Recommended.
+
+## Building a single executable
+
+To ship LivEdit (and any decal preview images in `assets/`) as one
+standalone `.exe`/binary with PyInstaller:
+
+```bash
+pip install pyinstaller
+```
+
+**Windows:**
+```bash
+pyinstaller --onefile --windowed --add-data "assets;assets" main.py
+```
+
+**Linux/macOS:**
+```bash
+pyinstaller --onefile --windowed --add-data "assets:assets" main.py
+```
+
+(Note the `;` vs `:` separator — that's the one difference between
+platforms.) The result lands in `dist/` as a single file — no
+`assets` folder needs to travel alongside it, since `--add-data`
+packs everything into the exe and it's unpacked automatically at
+runtime.
+
+If you ever add images or other files outside of `assets/`, use
+`livedit.resources.resource_path(...)` to load them rather than a
+plain relative path — it already knows how to find bundled files both
+when running from source and when running as the frozen exe.
+

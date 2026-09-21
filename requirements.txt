@@ -1,1 +1,3 @@
-pyperclip
+# Both optional, but recommended:
+pyperclip   # reliable cross-platform clipboard (see clipboard_util.py)
+Pillow      # broader image format support + clean thumbnail resizing for decal icons (see icons.py)
