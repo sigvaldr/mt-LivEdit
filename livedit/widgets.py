@@ -18,7 +18,7 @@ from typing import Optional
 
 from . import theme
 
-ROW_HEIGHT_PADDING = 4
+ROW_HEIGHT_PADDING = 6
 
 
 class SelectableIconList(ttk.Frame):
@@ -72,13 +72,16 @@ class SelectableIconList(ttk.Frame):
         if icon is not None:
             icon_label = tk.Label(row, image=icon, background=theme.PANEL)
             icon_label.image = icon  # keep a live reference or Tk will garbage-collect it
-            icon_label.pack(side="left", padx=(6, 8), pady=ROW_HEIGHT_PADDING)
+            icon_label.pack(side="left", padx=(8, 10), pady=ROW_HEIGHT_PADDING)
         else:
             # keep every row the same height/indent whether or not it has an icon
-            icon_label = tk.Label(row, text="", width=4, background=theme.PANEL)
-            icon_label.pack(side="left", padx=(6, 8), pady=ROW_HEIGHT_PADDING)
+            icon_label = tk.Label(row, text="", width=5, background=theme.PANEL)
+            icon_label.pack(side="left", padx=(8, 10), pady=ROW_HEIGHT_PADDING)
 
-        text_label = tk.Label(row, text=text, background=theme.PANEL, foreground=theme.BLUE, anchor="w")
+        text_label = tk.Label(
+            row, text=text, background=theme.PANEL, foreground=theme.BLUE,
+            anchor="w", font=("TkDefaultFont", 11),
+        )
         text_label.pack(side="left", fill="x", expand=True, pady=ROW_HEIGHT_PADDING)
 
         for widget in (row, icon_label, text_label):

@@ -22,7 +22,7 @@ from .widgets import SelectableIconList
 
 APP_TITLE = "LivEdit"
 PAD = 10
-ICON_SIZE = 32
+ICON_SIZE = 48
 
 
 class LivEditApp(tk.Tk):
@@ -50,6 +50,12 @@ class LivEditApp(tk.Tk):
         self.import_button.pack(side="right", padx=(0, PAD))
 
         ttk.Separator(self, orient="horizontal").pack(fill="x", pady=(PAD, 0))
+
+        # ---- persistent footer (transient status messages, e.g. "Copied to clipboard") ----
+        self.status_var = tk.StringVar(value="")
+        self.status_label = ttk.Label(self, textvariable=self.status_var, foreground=theme.BLUE)
+        self.status_label.pack(side="bottom", fill="x", padx=PAD, pady=(0, PAD))
+        self._status_after_id: str | None = None
 
         # ---- swappable body ----
         self.body = ttk.Frame(self, padding=PAD)
@@ -111,14 +117,31 @@ class LivEditApp(tk.Tk):
         return [layers[i] for i in self.selected_storage_indices]
 
     def apply_operation_and_return(self, apply_fn) -> None:
-        """Runs apply_fn() (which mutates the selected layers), then goes
-        back to the decal list screen."""
+        """Runs apply_fn() (which mutates the selected layers), copies
+        the updated document to the clipboard, then goes back to the
+        decal list screen."""
         try:
             apply_fn()
         except ValueError as exc:
             messagebox.showerror(APP_TITLE, str(exc))
             return
+        self._auto_copy_to_clipboard()
         self.show_decal_list_screen()
+
+    def _auto_copy_to_clipboard(self) -> None:
+        assert self.document is not None
+        try:
+            copy_text(self.document.to_json(), tk_widget=self)
+        except ClipboardError as exc:
+            self.show_status(f"Applied, but couldn't copy to clipboard: {exc}")
+            return
+        self.show_status("Applied \u2014 copied to clipboard.")
+
+    def show_status(self, text: str, duration_ms: int = 3000) -> None:
+        self.status_var.set(text)
+        if self._status_after_id is not None:
+            self.after_cancel(self._status_after_id)
+        self._status_after_id = self.after(duration_ms, lambda: self.status_var.set(""))
 
 
 # ==========================================================================
