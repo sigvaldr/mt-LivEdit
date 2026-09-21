@@ -1,15 +1,4 @@
-"""
-A scrollable list of rows (icon + text), each independently toggleable
-as "selected" - used instead of a plain tk.Listbox so that decal
-thumbnails can be shown next to each name. Plain tk.Listbox can only
-ever show text, never images, which is why this exists.
 
-Usage:
-    rows = [(storage_index, "1. some-decal", icon_or_None), ...]
-    widget = SelectableIconList(parent, rows)
-    widget.select_all()
-    widget.get_selection()  # -> set of storage_index currently selected
-"""
 from __future__ import annotations
 
 import tkinter as tk
@@ -25,21 +14,27 @@ class SelectableIconList(ttk.Frame):
     def __init__(self, parent: tk.Widget, rows: list[tuple[int, str, Optional[tk.PhotoImage]]]) -> None:
         super().__init__(parent)
 
-        self._order: list[int] = [storage_index for storage_index, _, _ in rows]
+        self._order: list[int] = [
+            storage_index for storage_index, _, _ in rows]
         self._row_frames: dict[int, tk.Frame] = {}
         self._selected: set[int] = set()
 
-        self._canvas = tk.Canvas(self, background=theme.PANEL, highlightthickness=0)
-        vscroll = ttk.Scrollbar(self, orient="vertical", command=self._canvas.yview)
+        self._canvas = tk.Canvas(
+            self, background=theme.PANEL, highlightthickness=0)
+        vscroll = ttk.Scrollbar(self, orient="vertical",
+                                command=self._canvas.yview)
         self._canvas.configure(yscrollcommand=vscroll.set)
         self._canvas.pack(side="left", fill="both", expand=True)
         vscroll.pack(side="right", fill="y")
 
         self._inner = tk.Frame(self._canvas, background=theme.PANEL)
-        self._inner_id = self._canvas.create_window((0, 0), window=self._inner, anchor="nw")
+        self._inner_id = self._canvas.create_window(
+            (0, 0), window=self._inner, anchor="nw")
 
-        self._inner.bind("<Configure>", lambda _e: self._canvas.configure(scrollregion=self._canvas.bbox("all")))
-        self._canvas.bind("<Configure>", lambda e: self._canvas.itemconfig(self._inner_id, width=e.width))
+        self._inner.bind("<Configure>", lambda _e: self._canvas.configure(
+            scrollregion=self._canvas.bbox("all")))
+        self._canvas.bind("<Configure>", lambda e: self._canvas.itemconfig(
+            self._inner_id, width=e.width))
 
         self._canvas.bind("<Enter>", self._bind_mousewheel)
         self._canvas.bind("<Leave>", self._unbind_mousewheel)
@@ -49,9 +44,12 @@ class SelectableIconList(ttk.Frame):
 
     # -- scrolling -----------------------------------------------------
     def _bind_mousewheel(self, _event) -> None:
-        self._canvas.bind_all("<MouseWheel>", self._on_mousewheel)      # Windows / macOS
-        self._canvas.bind_all("<Button-4>", self._on_mousewheel_linux)  # Linux scroll up
-        self._canvas.bind_all("<Button-5>", self._on_mousewheel_linux)  # Linux scroll down
+        # Windows / macOS
+        self._canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self._canvas.bind_all(
+            "<Button-4>", self._on_mousewheel_linux)  # Linux scroll up
+        # Linux scroll down
+        self._canvas.bind_all("<Button-5>", self._on_mousewheel_linux)
 
     def _unbind_mousewheel(self, _event) -> None:
         self._canvas.unbind_all("<MouseWheel>")
@@ -75,18 +73,21 @@ class SelectableIconList(ttk.Frame):
             icon_label.pack(side="left", padx=(8, 10), pady=ROW_HEIGHT_PADDING)
         else:
             # keep every row the same height/indent whether or not it has an icon
-            icon_label = tk.Label(row, text="", width=5, background=theme.PANEL)
+            icon_label = tk.Label(row, text="", width=5,
+                                  background=theme.PANEL)
             icon_label.pack(side="left", padx=(8, 10), pady=ROW_HEIGHT_PADDING)
 
         text_label = tk.Label(
             row, text=text, background=theme.PANEL, foreground=theme.BLUE,
             anchor="w", font=("TkDefaultFont", 11),
         )
-        text_label.pack(side="left", fill="x", expand=True, pady=ROW_HEIGHT_PADDING)
+        text_label.pack(side="left", fill="x", expand=True,
+                        pady=ROW_HEIGHT_PADDING)
 
         for widget in (row, icon_label, text_label):
             widget.configure(cursor="hand2")
-            widget.bind("<Button-1>", lambda _e, si=storage_index: self._toggle(si))
+            widget.bind("<Button-1>", lambda _e,
+                        si=storage_index: self._toggle(si))
 
         self._row_frames[storage_index] = row
 

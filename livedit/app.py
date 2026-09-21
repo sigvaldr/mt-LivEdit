@@ -1,13 +1,3 @@
-"""
-LivEdit - a small GUI to batch move/rotate/scale MotorTown: Behind The
-Wheel livery decals, without hand-editing the exported JSON.
-
-Flow:
-    Paste screen -> Decal list -> Operation select -> Operation params
-    -> (back to) Decal list
-An Export button is always available and opens the Export screen from
-wherever you are.
-"""
 from __future__ import annotations
 
 import tkinter as tk
@@ -29,8 +19,8 @@ class LivEditApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry("640x520")
-        self.minsize(520, 420)
+        self.geometry("800x600")
+        self.minsize(600, 600)
         theme.apply_theme(self)
         self.icon_cache = IconCache(size=ICON_SIZE)
 
@@ -42,19 +32,24 @@ class LivEditApp(tk.Tk):
         # ---- persistent chrome ----
         header = ttk.Frame(self, padding=(PAD, PAD, PAD, 0))
         header.pack(fill="x")
-        self.title_label = ttk.Label(header, text=APP_TITLE, font=("TkDefaultFont", 14, "bold"))
+        self.title_label = ttk.Label(
+            header, text=APP_TITLE, font=("TkDefaultFont", 14, "bold"))
         self.title_label.pack(side="left")
-        self.export_button = ttk.Button(header, text="Export", command=self.go_to_export)
+        self.export_button = ttk.Button(
+            header, text="Export", command=self.go_to_export)
         self.export_button.pack(side="right")
-        self.import_button = ttk.Button(header, text="Import", command=self.show_paste_screen)
+        self.import_button = ttk.Button(
+            header, text="Import", command=self.show_paste_screen)
         self.import_button.pack(side="right", padx=(0, PAD))
 
         ttk.Separator(self, orient="horizontal").pack(fill="x", pady=(PAD, 0))
 
         # ---- persistent footer (transient status messages, e.g. "Copied to clipboard") ----
         self.status_var = tk.StringVar(value="")
-        self.status_label = ttk.Label(self, textvariable=self.status_var, foreground=theme.BLUE)
-        self.status_label.pack(side="bottom", fill="x", padx=PAD, pady=(0, PAD))
+        self.status_label = ttk.Label(
+            self, textvariable=self.status_var, foreground=theme.BLUE)
+        self.status_label.pack(side="bottom", fill="x",
+                               padx=PAD, pady=(0, PAD))
         self._status_after_id: str | None = None
 
         # ---- swappable body ----
@@ -76,7 +71,8 @@ class LivEditApp(tk.Tk):
         self._update_export_availability()
 
     def _update_export_availability(self) -> None:
-        self.export_button.state(["!disabled"] if self.document is not None else ["disabled"])
+        self.export_button.state(
+            ["!disabled"] if self.document is not None else ["disabled"])
 
     def show_paste_screen(self) -> None:
         self._set_screen(PasteScreen)
@@ -117,9 +113,6 @@ class LivEditApp(tk.Tk):
         return [layers[i] for i in self.selected_storage_indices]
 
     def apply_operation_and_return(self, apply_fn) -> None:
-        """Runs apply_fn() (which mutates the selected layers), copies
-        the updated document to the clipboard, then goes back to the
-        decal list screen."""
         try:
             apply_fn()
         except ValueError as exc:
@@ -141,7 +134,8 @@ class LivEditApp(tk.Tk):
         self.status_var.set(text)
         if self._status_after_id is not None:
             self.after_cancel(self._status_after_id)
-        self._status_after_id = self.after(duration_ms, lambda: self.status_var.set(""))
+        self._status_after_id = self.after(
+            duration_ms, lambda: self.status_var.set(""))
 
 
 # ==========================================================================
@@ -150,7 +144,6 @@ class LivEditApp(tk.Tk):
 
 
 class PasteScreen(ttk.Frame):
-    """First screen: paste the raw decal export JSON from the game."""
 
     def __init__(self, parent: tk.Widget, app: LivEditApp) -> None:
         super().__init__(parent)
@@ -173,7 +166,8 @@ class PasteScreen(ttk.Frame):
 
         button_row = ttk.Frame(self)
         button_row.pack(fill="x", pady=(PAD, 0))
-        ttk.Button(button_row, text="Load", command=self._on_load).pack(side="right")
+        ttk.Button(button_row, text="Load",
+                   command=self._on_load).pack(side="right")
 
     def _on_load(self) -> None:
         raw_text = self.entry_var.get()
@@ -186,15 +180,13 @@ class PasteScreen(ttk.Frame):
 
 
 class DecalListScreen(ttk.Frame):
-    """Shows decals in in-game order, each with its preview icon (when
-    one is found in assets/decals/), with multi-select and Select
-    All/None."""
 
     def __init__(self, parent: tk.Widget, app: LivEditApp) -> None:
         super().__init__(parent)
         self.app = app
         assert app.document is not None
-        self.rows = app.document.display_rows()  # [(storage_index, label), ...]
+        # [(storage_index, label), ...]
+        self.rows = app.document.display_rows()
 
         ttk.Label(
             self,
@@ -217,12 +209,15 @@ class DecalListScreen(ttk.Frame):
 
         select_row = ttk.Frame(self)
         select_row.pack(fill="x", pady=(PAD, 0))
-        ttk.Button(select_row, text="Select All", command=self.icon_list.select_all).pack(side="left")
-        ttk.Button(select_row, text="Select None", command=self.icon_list.select_none).pack(side="left", padx=(PAD, 0))
+        ttk.Button(select_row, text="Select All",
+                   command=self.icon_list.select_all).pack(side="left")
+        ttk.Button(select_row, text="Select None", command=self.icon_list.select_none).pack(
+            side="left", padx=(PAD, 0))
 
         button_row = ttk.Frame(self)
         button_row.pack(fill="x", pady=(PAD, 0))
-        ttk.Button(button_row, text="Continue", command=self._on_continue).pack(side="right")
+        ttk.Button(button_row, text="Continue",
+                   command=self._on_continue).pack(side="right")
 
     def _on_continue(self) -> None:
         self.app.selected_storage_indices = self.icon_list.get_selection()
@@ -230,7 +225,6 @@ class DecalListScreen(ttk.Frame):
 
 
 class OperationSelectScreen(ttk.Frame):
-    """Choose Move / Rotate / Scale for the current selection."""
 
     def __init__(self, parent: tk.Widget, app: LivEditApp) -> None:
         super().__init__(parent)
@@ -254,8 +248,6 @@ class OperationSelectScreen(ttk.Frame):
 
 
 class _ParamsScreenBase(ttk.Frame):
-    """Shared layout for the three parameter screens: a title, a radio
-    group of direction choices, a numeric entry, and Apply/Cancel."""
 
     title_text = ""
     direction_label = ""
@@ -281,12 +273,15 @@ class _ParamsScreenBase(ttk.Frame):
 
         ttk.Label(self, text=self.amount_label).pack(anchor="w", pady=(PAD, 0))
         self.amount_var = tk.StringVar(value="10")
-        ttk.Entry(self, textvariable=self.amount_var, width=12).pack(anchor="w")
+        ttk.Entry(self, textvariable=self.amount_var,
+                  width=12).pack(anchor="w")
 
         button_row = ttk.Frame(self)
         button_row.pack(fill="x", pady=(PAD, 0), side="bottom")
-        ttk.Button(button_row, text="Cancel", command=app.show_operation_select_screen).pack(side="left")
-        ttk.Button(button_row, text="Apply", command=self._on_apply).pack(side="right")
+        ttk.Button(button_row, text="Cancel",
+                   command=app.show_operation_select_screen).pack(side="left")
+        ttk.Button(button_row, text="Apply",
+                   command=self._on_apply).pack(side="right")
 
     def _parse_amount(self) -> float | None:
         try:
@@ -295,7 +290,8 @@ class _ParamsScreenBase(ttk.Frame):
             messagebox.showerror(APP_TITLE, "Enter a number.")
             return None
         if value < 0:
-            messagebox.showerror(APP_TITLE, "Enter a positive number; use the direction option for sign.")
+            messagebox.showerror(
+                APP_TITLE, "Enter a positive number; use the direction option for sign.")
             return None
         return value
 
@@ -320,7 +316,8 @@ class MoveParamsScreen(_ParamsScreenBase):
             return
         direction = self.direction_var.get()
         self.app.apply_operation_and_return(
-            lambda: operations.move(self.app.selected_layers(), direction, amount)
+            lambda: operations.move(
+                self.app.selected_layers(), direction, amount)
         )
 
 
@@ -339,7 +336,8 @@ class RotateParamsScreen(_ParamsScreenBase):
             return
         direction = self.direction_var.get()
         self.app.apply_operation_and_return(
-            lambda: operations.rotate(self.app.selected_layers(), direction, amount)
+            lambda: operations.rotate(
+                self.app.selected_layers(), direction, amount)
         )
 
 
@@ -358,7 +356,8 @@ class ScaleParamsScreen(_ParamsScreenBase):
             return
         direction = self.direction_var.get()
         self.app.apply_operation_and_return(
-            lambda: operations.scale(self.app.selected_layers(), direction, amount)
+            lambda: operations.scale(
+                self.app.selected_layers(), direction, amount)
         )
 
 
@@ -386,7 +385,8 @@ class ExportScreen(ttk.Frame):
             anchor="w", pady=(PAD, 0)
         )
 
-        ttk.Button(self, text="Back", command=self._on_back).pack(anchor="w", pady=(PAD, 0), side="bottom")
+        ttk.Button(self, text="Back", command=self._on_back).pack(
+            anchor="w", pady=(PAD, 0), side="bottom")
 
     def _on_back(self) -> None:
         if self.app.selected_storage_indices:
