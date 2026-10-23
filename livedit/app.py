@@ -10,7 +10,7 @@ from . import theme
 from .icons import IconCache
 from .widgets import SelectableIconList, ColorWheel
 
-VERSION = "1.0"
+VERSION = "2.0"
 
 APP_TITLE = "LivEdit v"+VERSION
 PAD = 10
@@ -31,7 +31,8 @@ class LivEditApp(tk.Tk):
         # ---- app state ----
         self.document: LiveryDocument | None = None
         self.selected_storage_indices: set[int] = set()
-        self.pending_operation: str | None = None  # "move" | "rotate" | "scale" | "color"
+        # "move" | "rotate" | "scale" | "color"
+        self.pending_operation: str | None = None
 
         # ---- persistent chrome ----
         header = ttk.Frame(self, padding=(PAD, PAD, PAD, 0))
