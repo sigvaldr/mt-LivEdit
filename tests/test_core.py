@@ -108,6 +108,35 @@ def test_round_trip_preserves_other_fields():
     assert len(out["decal"]["decalLayers"]) == 2
 
 
+def test_set_color_keeps_alpha_without_alpha_in_hex():
+    doc = LiveryDocument.from_text(json.dumps(SAMPLE))
+    layer = doc.layers[0]
+    layer["color"]["a"] = 128
+    operations.set_color([layer], "#FF8000")
+    assert layer["color"] == {"r": 255, "g": 128, "b": 0, "a": 128}
+
+
+def test_set_color_with_alpha_and_no_hash():
+    doc = LiveryDocument.from_text(json.dumps(SAMPLE))
+    layer = doc.layers[0]
+    operations.set_color([layer], "00ff0040")
+    assert layer["color"] == {"r": 0, "g": 255, "b": 0, "a": 64}
+
+
+def test_set_color_rejects_bad_hex():
+    for bad in ("", "#12345", "#GGGGGG", "#1234567"):
+        try:
+            operations.parse_hex_color(bad)
+            assert False, f"should reject {bad!r}"
+        except ValueError:
+            pass
+
+
+def test_color_to_hex_round_trip():
+    assert operations.color_to_hex({"r": 255, "g": 128, "b": 0, "a": 255}) == "#FF8000"
+    assert operations.color_to_hex({"r": 1, "g": 2, "b": 3, "a": 16}) == "#01020310"
+
+
 if __name__ == "__main__":
     import inspect
     failures = 0

@@ -8,7 +8,7 @@ from . import operations
 from .clipboard_util import copy_text, ClipboardError
 from . import theme
 from .icons import IconCache
-from .widgets import SelectableIconList
+from .widgets import SelectableIconList, ColorWheel
 
 VERSION = "1.0"
 
@@ -31,7 +31,7 @@ class LivEditApp(tk.Tk):
         # ---- app state ----
         self.document: LiveryDocument | None = None
         self.selected_storage_indices: set[int] = set()
-        self.pending_operation: str | None = None  # "move" | "rotate" | "scale"
+        self.pending_operation: str | None = None  # "move" | "rotate" | "scale" | "color"
 
         # ---- persistent chrome ----
         header = ttk.Frame(self, padding=(PAD, PAD, PAD, 0))
@@ -96,6 +96,7 @@ class LivEditApp(tk.Tk):
             "move": MoveParamsScreen,
             "rotate": RotateParamsScreen,
             "scale": ScaleParamsScreen,
+            "color": ColorParamsScreen,
         }[operation])
 
     def go_to_export(self) -> None:
@@ -240,7 +241,7 @@ class OperationSelectScreen(ttk.Frame):
             text=f"{count} decal(s) selected. Choose an operation:",
         ).pack(anchor="w", pady=(0, PAD))
 
-        for label, op in (("Move", "move"), ("Rotate", "rotate"), ("Scale", "scale")):
+        for label, op in (("Move", "move"), ("Rotate", "rotate"), ("Scale", "scale"), ("Color", "color")):
             ttk.Button(
                 self, text=label, width=20,
                 command=lambda op=op: app.show_operation_params_screen(op),
@@ -363,6 +364,91 @@ class ScaleParamsScreen(_ParamsScreenBase):
             lambda: operations.scale(
                 self.app.selected_layers(), direction, amount)
         )
+
+
+class ColorParamsScreen(ttk.Frame):
+    """Set a new color via hex entry or the color wheel (kept in sync)."""
+
+    def __init__(self, parent: tk.Widget, app: LivEditApp) -> None:
+        super().__init__(parent)
+        self.app = app
+        self._from_wheel = False
+
+        count = len(app.selected_storage_indices)
+        ttk.Label(
+            self, text=f"Color - {count} decal(s) selected",
+            font=("TkDefaultFont", 11, "bold"),
+        ).pack(anchor="w", pady=(0, PAD))
+
+        body = ttk.Frame(self)
+        body.pack(fill="x")
+
+        self.wheel = ColorWheel(body, on_change=self._on_wheel_change)
+        self.wheel.pack(side="left", anchor="n")
+
+        side = ttk.Frame(body)
+        side.pack(side="left", anchor="n", padx=(PAD * 2, 0))
+        ttk.Label(side, text="Hex code:").pack(anchor="w")
+        self.hex_var = tk.StringVar()
+        entry = ttk.Entry(side, textvariable=self.hex_var, width=14)
+        entry.pack(anchor="w")
+        entry.bind("<Return>", lambda _e: self._on_apply())
+        ttk.Label(
+            side, wraplength=240, justify="left",
+            text="Format #RRGGBB, or #RRGGBBAA to also set alpha. "
+                 "Without alpha, each decal keeps its current alpha.",
+        ).pack(anchor="w", pady=(4, PAD))
+        ttk.Label(side, text="Preview:").pack(anchor="w")
+        self.swatch = tk.Frame(side, width=120, height=60, background=theme.PANEL,
+                               highlightthickness=1, highlightbackground=theme.BLUE)
+        self.swatch.pack(anchor="w", pady=(2, 0))
+
+        # Start from the first selected decal's current color.
+        start = "#FFFFFF"
+        layers = app.selected_layers()
+        if layers and isinstance(layers[0].get("color"), dict):
+            try:
+                start = operations.color_to_hex(layers[0]["color"])
+            except (TypeError, ValueError):
+                pass
+        self.hex_var.set(start)
+        self.hex_var.trace_add("write", self._on_hex_edit)
+        self._on_hex_edit()
+        entry.focus_set()
+
+        button_row = ttk.Frame(self)
+        button_row.pack(fill="x", pady=(PAD, 0), side="bottom")
+        ttk.Button(button_row, text="Cancel",
+                   command=app.show_operation_select_screen).pack(side="left")
+        ttk.Button(button_row, text="Apply",
+                   command=self._on_apply).pack(side="right")
+
+    def _on_wheel_change(self, r: int, g: int, b: int) -> None:
+        # Keep an alpha suffix the user typed; the wheel only controls RGB.
+        suffix = ""
+        try:
+            alpha = operations.parse_hex_color(self.hex_var.get())[3]
+            if alpha is not None:
+                suffix = f"{alpha:02X}"
+        except ValueError:
+            pass
+        self._from_wheel = True
+        self.hex_var.set(f"#{r:02X}{g:02X}{b:02X}{suffix}")
+        self._from_wheel = False
+
+    def _on_hex_edit(self, *_args) -> None:
+        try:
+            r, g, b, _a = operations.parse_hex_color(self.hex_var.get())
+        except ValueError:
+            return  # mid-typing; leave preview/wheel as they were
+        self.swatch.configure(background=f"#{r:02x}{g:02x}{b:02x}")
+        if not self._from_wheel:
+            self.wheel.set_rgb(r, g, b)
+
+    def _on_apply(self) -> None:
+        text = self.hex_var.get()
+        self.app.apply_operation_and_return(
+            lambda: operations.set_color(self.app.selected_layers(), text))
 
 
 class ExportScreen(ttk.Frame):
